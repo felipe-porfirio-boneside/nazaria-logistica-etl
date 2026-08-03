@@ -1,4 +1,4 @@
-# Data Warehouse Logístico & Analytics Platform
+# Data Warehouse Logístico
 
 ## Pipeline de Dados SQL Server → PostgreSQL → Power BI
 
