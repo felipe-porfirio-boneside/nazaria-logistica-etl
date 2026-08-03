@@ -217,7 +217,7 @@ Os dados são extraídos do SQL Server através de consultas utilizando:
 
 As extrações dos dados operacionais são realizadas através de Stored Procedures desenvolvidas no SQL Server.
 
-Para tabelas com maior volume de movimentação, foram implementadas procedures utilizando **SQL Server Change Tracking**, permitindo processamento incremental das alterações.
+Foram implementadas procedures utilizando **SQL Server Change Tracking**, permitindo processamento incremental das alterações.
 
 ## Procedures Utilizadas
 
