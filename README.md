@@ -213,7 +213,7 @@ Os dados são extraídos do SQL Server através de consultas utilizando:
 - Stored Procedures
 - Change Tracking
 
-# 📦 Stored Procedures - Processo ETL SQL Server
+# Stored Procedures - Processo ETL SQL Server
 
 As extrações dos dados operacionais são realizadas através de Stored Procedures desenvolvidas no SQL Server.
 
