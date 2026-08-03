@@ -1,0 +1,25 @@
+CREATE PROCEDURE [dbo].[BONESIDE_ETL_SOLICITACAO_FATURAMENTO] 
+as   
+begin 
+
+declare @StartVersionID bigint
+declare @AtualVersionID bigint = CHANGE_TRACKING_CURRENT_VERSION()
+
+SET @StartVersionID = (select Change_Tracking_Version from PBS_NAZARIA_DADOS.dbo.tblChange_Tracking_Version where Table_Name = 'dbo.SOLICITACOES_FATURAMENTO
+S')
+
+select t1.SOLICITACAO_FATURAMENTO	as SOLICITACAO_FATURAMENTO
+		,t1.DATA_HORA						as DATA_HORA_SOLICITACAO 
+		,t1.PEDIDO_VENDA					as PEDIDO_VENDA
+		,t1.ENTIDADE						as ENTIDADE
+		,t1.EMPRESA							as EMPRESA	
+		,@AtualVersionID					as versao_ct
+		,ct.SYS_CHANGE_OPERATION		as operation
+
+from CHANGETABLE(CHANGES dbo.SOLICITACOES_FATURAMENTOS, @StartVersionID) ct
+inner join PBS_NAZARIA_DADOS.dbo.SOLICITACOES_FATURAMENTOS t1 with(nolock)
+	on t1.SOLICITACAO_FATURAMENTO = ct.SOLICITACAO_FATURAMENTO
+
+where (SELECT MAX(v) FROM (VALUES(ct.SYS_CHANGE_VERSION), (ct.SYS_CHANGE_CREATION_VERSION)) AS VALUE(v)) <= @AtualVersionID
+
+end

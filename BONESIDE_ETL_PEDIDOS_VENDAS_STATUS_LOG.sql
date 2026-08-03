@@ -1,0 +1,63 @@
+CREATE PROCEDURE [dbo].[BONESIDE_ETL_PEDIDOS_VENDAS_STATUS_LOG] 
+as   
+begin 
+
+DECLARE @StartVersionID BIGINT
+declare @AtualVersionID bigint = CHANGE_TRACKING_CURRENT_VERSION()
+
+SET @StartVersionID = (SELECT Change_Tracking_Version FROM tblChange_Tracking_Version WHERE Table_Name = 'dbo.PEDIDOS_VENDAS_STATUS_LOG')
+
+select PEDIDO_VEN
+DA
+		,max(CASE WHEN STATUS = '01 - PEDIDO EM SOLICITAÇÃO DE FATURAMENTO'	THEN DATA_HORA_STATUS END)							as status_1
+		,min(CASE WHEN STATUS = '02 - PEDIDO EM SEPARAÇÃO'							THEN DATA_HORA_STATUS END)							as status_2				
+		,max(CASE WHEN STATUS = '03 - PEDIDO LIBERADO PARA EXPEDIÇÃO'			THEN DATA_HORA_STATUS END)							as status_3
+		,max(CASE WHEN STATUS = '04 - PEDIDO PRÉ-FATURADO'							THEN DATA_HORA_STATUS END)							as status_4
+		,max(CASE WHEN STATUS = '05 - PEDIDO FATURADO'								THEN DATA_HORA_STATUS END)							as status_5
+		,max(CASE WHEN STATUS = '06 - PEDIDO DESPACHADO'							THEN DATA_HORA_STATUS END)							as status_6
+		,max(CASE WHEN STATUS = '99 - PEDIDO CORTADO NA SEPARAÇÃO'				THEN DATA_HORA_STATUS END)							as status_99
+		
+		,datediff(minute,max(CASE WHEN STATUS = '01 - PEDIDO EM SOLICITAÇÃO DE FATURAMENTO' THEN DATA_HORA_STATUS END)
+							 ,min(CASE WHEN STATUS = '02 - PEDIDO EM SEPARAÇÃO'						THEN DATA_HORA_STATUS END))	as tempo_st1
+		
+		,datediff(minute,min(CASE WHEN STATUS = '02 - PEDIDO EM SEPARAÇÃO'						THEN DATA_HORA_STATUS END)			
+							 ,max(CASE WHEN STATUS = '03 - PEDIDO LIBERADO PARA EXPEDIÇÃO'			THEN DATA_HORA_STATUS END))	as tempo_st2
+		
+		,datediff(minute,max(CASE WHEN STATUS = '03 - PEDIDO LIBERADO PARA EXPEDIÇÃO'			THEN DATA_HORA_STATUS END)			
+							 ,max(CASE WHEN STATUS = '04 - PEDIDO PRÉ-FATURADO'						THEN DATA_HORA_STATUS END))	as tempo_st3
+
+		,datediff(minute,max(CASE WHEN STATUS = '04 - PEDIDO PRÉ-FATURADO'						THEN DATA_HORA_STATUS END)			
+							 ,max(CASE WHEN STATUS = '05 - PEDIDO FATURADO'								THEN DATA_HORA_STATUS END))	as tempo_st4
+
+		,datediff(minute,max(CASE WHEN STATUS = '05 - PEDIDO FATURADO'								THEN DATA_HORA_STATUS END)			
+							 ,max(CASE WHEN STATUS = '06 - PEDIDO DESPACHADO'							THEN DATA_HORA_STATUS END))	as tempo_st5
+							 
+		,datediff(minute,max(CASE WHEN STATUS = '01 - PEDIDO EM SOLICITAÇÃO DE FATURAMENTO'	THEN DATA_HORA_STATUS END)			
+							 ,max(CASE WHEN STATUS = '06 - PEDIDO DESPACHADO'							THEN DATA_HORA_STATUS END))	as tempo_total
+		,@AtualVersionID																																	as versao_ct
+		,x.operation																																		as operation
+
+from (	
+			select e.PED
+IDO_VENDA							as PEDIDO_VENDA
+				   ,e.DATA_HORA								as DATA_HORA_STATUS
+			      ,C.DESCRICAO								as STATUS
+					,ct.SYS_CHANGE_VERSION					as SYS_CHANGE_VERSION	
+					,ct.SYS_CHANGE_CREATION_VERSION		as SYS_CHANGE_CREATION_VERSION
+					,ct.SYS_CHANGE_OPERATION				as operation
+
+			from CHANGETABLE(CHANGES dbo.PEDIDOS_VENDA
+S_STATUS_LOG, @StartVersionID) ct
+			inner join dbo.PEDIDOS_VENDAS_STATUS_LOG e with(nolock)
+				on e.PEDIDO_VENDA_STATUS_LOG = ct.PEDIDO_VENDA_STATUS_LOG
+			inner join PBS_NAZARIA_DADOS.dbo.STATUS_PEDIDOS_VENDAS C with(nolock) 
+				on e.PEDIDO_VENDA_STAT
+US = C.STATUS_PEDIDO_VENDA
+			  and c.STATUS_PEDIDO_VENDA in (9,7,19,21,12,13,20)
+		) x
+
+WHERE (SELECT MAX(v) FROM (VALUES(x.SYS_CHANGE_VERSION), (x.SYS_CHANGE_CREATION_VERSION)) AS VALUE(v)) <= @AtualVersionID
+
+group by PEDIDO_VENDA, x.operation
+
+end
